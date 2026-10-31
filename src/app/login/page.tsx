@@ -35,8 +35,11 @@ export default function LoginPage() {
       return;
     }
 
-    const destination = profile.role === "admin" ? "/admin" : "/dashboard";
-    router.replace(destination);
+    const destinations: Record<string, string> = {
+      admin: "/admin",
+      teacher: "/teacher",
+    };
+    router.replace(destinations[profile.role] || "/dashboard");
     router.refresh();
   }
 

@@ -97,7 +97,7 @@ export default function TeacherPage() {
     if (!historyRows.length) { setMessage("Load attendance records before downloading."); return; }
     const quote = (value: string) => '"' + String(value).replace(/"/g, '""') + '"';
     const csv = [["Date", "Student", "Subject", "Status"].map(quote).join(","), ...historyRows.map(row => [row.attendance_date, row.student_name, row.subject_name, row.status].map(value => quote(String(value))).join(","))].join("\r\n");
-    const blob = new Blob(["\\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = "attendance-history.csv"; document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
   }
 

@@ -15,10 +15,28 @@ export default function LoginPage() {
     event.preventDefault();
     setBusy(true); setError("");
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    if (signInError || !authData.user) {
+      setBusy(false);
+      setError("The email address or password is incorrect. Please try again.");
+      return;
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role,is_active")
+      .eq("id", authData.user.id)
+      .maybeSingle();
+
     setBusy(false);
-    if (error) { setError("The email address or password is incorrect. Please try again."); return; }
-    router.replace("/dashboard");
+    if (!profile || !profile.is_active) {
+      await supabase.auth.signOut();
+      setError("Your account is inactive or its profile is not ready. Please contact the administrator.");
+      return;
+    }
+
+    const destination = profile.role === "admin" ? "/admin" : "/dashboard";
+    router.replace(destination);
     router.refresh();
   }
 

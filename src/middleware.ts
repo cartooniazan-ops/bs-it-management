@@ -17,7 +17,23 @@ export async function middleware(request: NextRequest) {
       },
     }
   );
-  await supabase.auth.getUser();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  const pathname = request.nextUrl.pathname;
+
+  // Keep the generic landing/dashboard out of the way for administrators.
+  if (user && (pathname === "/" || pathname === "/login" || pathname === "/dashboard")) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role,is_active")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profile?.is_active && profile.role === "admin") {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
+  }
+
   return response;
 }
 

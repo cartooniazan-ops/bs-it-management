@@ -10,10 +10,10 @@ export default function HomePage() {
         </p>
         <h1 className="text-4xl font-bold tracking-tight text-[#142b4a] sm:text-5xl">BS IT</h1>
         <p className="mx-auto mt-4 max-w-md text-sm leading-6 text-slate-600 sm:text-base">
-          A fresh, secure and responsive learning management experience.
+          Aasaan, mehfooz aur har device par chalne wala taleemi nizaam.
         </p>
         <div className="mx-auto mt-8 h-1 w-16 rounded-full bg-[#c6a45c]" />
-        <p className="mt-6 text-xs text-slate-400">Project foundation · Phase 1</p>
+        <p className="mt-6 text-xs text-slate-400">Project ka ibtidai marhala</p>
       </section>
     </main>
   );

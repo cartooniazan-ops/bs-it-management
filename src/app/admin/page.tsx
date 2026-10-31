@@ -35,6 +35,11 @@ export default function AdminPage(){
  const [attendanceDate,setAttendanceDate]=useState(new Date().toISOString().slice(0,10));
  const [attendanceSubject,setAttendanceSubject]=useState("");
  const [attendanceMarks,setAttendanceMarks]=useState<Record<string,string>>({});
+ const [historyFrom,setHistoryFrom]=useState("");
+ const [historyTo,setHistoryTo]=useState("");
+ const [historySubject,setHistorySubject]=useState("");
+ const [historyRows,setHistoryRows]=useState<Array<AttendanceRow & {student_name:string;subject_name:string}>>([]);
+ const [historyLoading,setHistoryLoading]=useState(false);
  const [search,setSearch]=useState("");
  const [newName,setNewName]=useState("");
  const [newEmail,setNewEmail]=useState("");
@@ -112,6 +117,31 @@ export default function AdminPage(){
   setBusy(false);
  }
  async function deleteNotice(id:string){if(!confirm("Delete this announcement?"))return;const {error}=await supabase.from("notices").delete().eq("id",id);setMessage(error?error.message:"Announcement deleted.");if(!error)await load();}
+ async function loadAttendanceHistory(){
+  setHistoryLoading(true);setMessage("");
+  try{
+   let all:AttendanceRow[]=[];let offset=0;const pageSize=1000;
+   while(true){
+    let query=supabase.from("attendance").select("id,student_id,subject_id,attendance_date,status").order("attendance_date",{ascending:false}).order("id").range(offset,offset+pageSize-1);
+    if(historyFrom)query=query.gte("attendance_date",historyFrom);
+    if(historyTo)query=query.lte("attendance_date",historyTo);
+    if(historySubject)query=query.eq("subject_id",historySubject);
+    const {data,error}=await query;if(error)throw error;
+    const page=(data||[]) as AttendanceRow[];all=all.concat(page);if(page.length<pageSize)break;offset+=pageSize;
+   }
+   setHistoryRows(all.map(row=>({...row,student_name:profiles.find(p=>p.id===row.student_id)?.full_name||"Unknown Student",subject_name:subjects.find(s=>s.id===row.subject_id)?.name||"General"})));
+   setMessage(all.length+" attendance records loaded.");
+  }catch(error){setMessage(error instanceof Error?error.message:"Could not load attendance history.");}
+  finally{setHistoryLoading(false);}
+ }
+ function downloadAttendanceCsv(){
+  if(!historyRows.length){setMessage("Load attendance records before downloading.");return;}
+  const columns=["Date","Student","Subject","Status"];
+  const quote=(value:string)=>'"'+String(value).replace(/"/g,'""')+'"';
+  const csv=[columns.map(quote).join(","),...historyRows.map(row=>[row.attendance_date,row.student_name,row.subject_name,row.status].map(value=>quote(String(value))).join(","))].join("\r\n");
+  const blob=new Blob(["\\uFEFF",csv],{type:"text/csv;charset=utf-8;"});
+  const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download="attendance-history.csv";document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
+ }
  async function saveAttendance(e:React.FormEvent){
   e.preventDefault();setBusy(true);setMessage("");
   const rows=students.map(s=>({student_id:s.id,subject_id:attendanceSubject||null,attendance_date:attendanceDate,status:attendanceMarks[s.id]||"present",marked_by:admin?.id}));
@@ -154,7 +184,7 @@ export default function AdminPage(){
    </div>}
    {tab==="Attendance"&&<div className="admin-content"><div className="admin-section-intro"><div><h2>Attendance Management</h2><p>Mark attendance for students and review recent records.</p></div></div>
     <form className="admin-form-card" onSubmit={saveAttendance}><div className="admin-form-grid"><label>Attendance Date<input type="date" required value={attendanceDate} onChange={e=>setAttendanceDate(e.target.value)}/></label><label>Subject<select value={attendanceSubject} onChange={e=>setAttendanceSubject(e.target.value)}><option value="">General / Full Day</option>{subjects.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label></div><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Student</th><th>Attendance Status</th></tr></thead><tbody>{students.map(s=><tr key={s.id}><td><b>{s.full_name}</b><small className="admin-cell-sub">{s.email}</small></td><td><select value={attendanceMarks[s.id]||"present"} onChange={e=>setAttendanceMarks(old=>({...old,[s.id]:e.target.value}))}><option value="present">Present</option><option value="absent">Absent</option><option value="late">Late</option><option value="leave">Leave</option></select></td></tr>)}</tbody></table>{!students.length&&<p className="admin-empty">No student accounts found.</p>}</div><div className="admin-form-actions"><button className="admin-primary" disabled={busy||!students.length}>{busy?"Saving...":"Save Attendance"}</button></div></form>
-    <div className="admin-panel-card"><h3>Recent Attendance Records</h3><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Date</th><th>Student</th><th>Subject</th><th>Status</th></tr></thead><tbody>{attendance.slice(0,50).map(a=><tr key={a.id}><td>{a.attendance_date}</td><td>{profiles.find(p=>p.id===a.student_id)?.full_name||"Student"}</td><td>{subjects.find(s=>s.id===a.subject_id)?.name||"General"}</td><td><span className={"attendance-pill "+a.status}>{a.status}</span></td></tr>)}</tbody></table></div></div>
+    <div className="admin-panel-card"><h3>Attendance History & Export</h3><p>View previous attendance for any date range and download the records as a CSV file.</p><div className="admin-form-grid"><label>From Date<input type="date" value={historyFrom} onChange={e=>setHistoryFrom(e.target.value)}/></label><label>To Date<input type="date" value={historyTo} onChange={e=>setHistoryTo(e.target.value)}/></label><label>Subject<select value={historySubject} onChange={e=>setHistorySubject(e.target.value)}><option value="">All Subjects</option>{subjects.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label></div><div className="admin-form-actions"><button type="button" className="admin-primary" disabled={historyLoading} onClick={loadAttendanceHistory}>{historyLoading?"Loading...":"Show Attendance History"}</button><button type="button" className="admin-secondary" disabled={!historyRows.length} onClick={downloadAttendanceCsv}>Download CSV</button></div><p className="admin-form-hint">{historyRows.length} records loaded. Select a date range to view a month or any custom period.</p><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Date</th><th>Student</th><th>Subject</th><th>Status</th></tr></thead><tbody>{historyRows.map(a=><tr key={a.id}><td>{a.attendance_date}</td><td>{a.student_name}</td><td>{a.subject_name}</td><td><span className={"attendance-pill "+a.status}>{a.status}</span></td></tr>)}</tbody></table>{!historyRows.length&&<p className="admin-empty">Choose filters and click Show Attendance History.</p>}</div></div>
    </div>}
    {tab==="Announcements"&&<div className="admin-content"><div className="admin-section-intro"><div><h2>Announcements</h2><p>Publish important information to students, teachers or everyone.</p></div></div>
     <form className="admin-form-card" onSubmit={publishNotice}><h3>Publish New Announcement</h3><div className="admin-form-grid"><label>Announcement Title<input required value={noticeTitle} onChange={e=>setNoticeTitle(e.target.value)} placeholder="Enter announcement title"/></label><label>Audience<select value={audience} onChange={e=>setAudience(e.target.value)}><option value="all">Everyone</option><option value="students">Students</option><option value="teachers">Teachers</option></select></label><label className="admin-full">Message<textarea required rows={4} value={noticeBody} onChange={e=>setNoticeBody(e.target.value)} placeholder="Write your announcement..."/></label></div><div className="admin-form-actions"><button className="admin-primary" disabled={busy}>{busy?"Publishing...":"Publish Announcement"}</button></div></form>

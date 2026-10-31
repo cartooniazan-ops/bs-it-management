@@ -21,7 +21,6 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   const pathname = request.nextUrl.pathname;
 
-  // Keep the generic landing/dashboard out of the way for administrators.
   if (user && (pathname === "/" || pathname === "/login" || pathname === "/dashboard")) {
     const { data: profile } = await supabase
       .from("profiles")
@@ -31,6 +30,9 @@ export async function middleware(request: NextRequest) {
 
     if (profile?.is_active && profile.role === "admin") {
       return NextResponse.redirect(new URL("/admin", request.url));
+    }
+    if (profile?.is_active && profile.role === "teacher") {
+      return NextResponse.redirect(new URL("/teacher", request.url));
     }
   }
 

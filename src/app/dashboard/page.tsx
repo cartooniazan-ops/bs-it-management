@@ -39,7 +39,7 @@ export default function DashboardPage() {
       <div className="brand"><div className="crest mini">BS <span>IT</span></div><div><b>BS IT</b><small>Class Management System</small></div></div>
       <p className="side-label">WORKSPACE</p>
       <nav>{sections.map(([name,desc,icon])=><button key={name} onClick={()=>setSection(name)} className={section===name?"nav-item active":"nav-item"}><span className="nav-icon">{icon}</span><span><b>{name}</b><small>{desc}</small></span></button>)}</nav>
-      {profile.role==="admin"&&<div className="admin-note">Administrator Access<br/><small>User and class management</small></div>}
+      {profile.role==="admin"&&<a className="admin-note admin-link" href="/admin">Open Admin Panel →<br/><small>Manage users, subjects and class</small></a>}
       <button className="logout" onClick={logout}>↪ &nbsp; Sign Out</button>
     </aside>
     <section className="main-panel">

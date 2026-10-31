@@ -17,7 +17,7 @@ export default function LoginPage() {
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
-    if (error) { setError("Email ya password ghalat hai. Dobara check karein."); return; }
+    if (error) { setError("The email address or password is incorrect. Please try again."); return; }
     router.replace("/dashboard");
     router.refresh();
   }
@@ -27,15 +27,15 @@ export default function LoginPage() {
       <section className="login-card">
         <div className="crest">BS <span>IT</span></div>
         <p className="eyebrow">CLASS MANAGEMENT SYSTEM</p>
-        <h1>Khush Aamdeed</h1>
-        <p className="muted">Apne account mein login karein.</p>
+        <h1>Welcome Back</h1>
+        <p className="muted">Sign in to your account to continue.</p>
         <form onSubmit={submit} className="login-form">
-          <label>Email address<input type="email" autoComplete="username" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="name@example.com"/></label>
-          <label>Password<input type="password" autoComplete="current-password" required value={password} onChange={e=>setPassword(e.target.value)} placeholder="Apna password likhein"/></label>
+          <label>Email Address<input type="email" autoComplete="username" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="name@example.com"/></label>
+          <label>Password<input type="password" autoComplete="current-password" required value={password} onChange={e=>setPassword(e.target.value)} placeholder="Enter your password"/></label>
           {error && <p className="error" role="alert">{error}</p>}
-          <button disabled={busy}>{busy ? "Login ho raha hai..." : "Login karein"} <span>→</span></button>
+          <button disabled={busy}>{busy ? "Signing in..." : "Sign In"} <span>→</span></button>
         </form>
-        <p className="footnote">Login ki sahulat BS IT administrator deta hai.</p>
+        <p className="footnote">Access is provided by your BS IT administrator.</p>
       </section>
     </main>
   );

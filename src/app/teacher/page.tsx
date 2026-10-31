@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -15,7 +15,7 @@ const days = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
 export default function TeacherPage() {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const [teacher, setTeacher] = useState<Profile | null>(null);
   const [tab, setTab] = useState("Overview");
   const [subjects, setSubjects] = useState<Subject[]>([]);
